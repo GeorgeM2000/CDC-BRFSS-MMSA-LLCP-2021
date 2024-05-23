@@ -1,0 +1,836 @@
+=== /* Code Dump for Simple Hash Join */ ===
+
+
+
+    // Custom class to represent the combination of values for the columns of interest
+    static class BucketKey {
+        private int micHd;
+        private String month;
+
+        public BucketKey(int micHd, String month) {
+            this.micHd = micHd;
+            this.month = month;
+        }
+
+        // Override equals and hashCode methods to ensure correct behavior when using BucketKey as a key in a HashMap
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            BucketKey bucketKey = (BucketKey) o;
+            return micHd == bucketKey.micHd && Objects.equals(month, bucketKey.month);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(micHd, month);
+        }
+    }
+
+
+
+        /*
+        Simple Hash-Join Algorithm
+         */
+
+        // CREATE the hash buckets based on the combinations of _MICHD and Timestamp
+
+        /*
+        long startTime = System.currentTimeMillis();
+
+        int[] micHdValues = {1, 2};
+        String[] months = {"01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"};
+
+        // Define a hash table to store rows based on the combination of values
+        Map<BucketKey, List<Map<String, Object>>> hashTable = new HashMap<>();
+
+        // Populate the hash table
+        for (int micHd : micHdValues) {
+            for (String month : months) {
+                BucketKey bucketKey = new BucketKey(micHd, month);
+                hashTable.put(bucketKey, new ArrayList<>());
+            }
+        }
+
+         */
+
+        // Print the buckets
+        /*
+        System.out.println("Number of Buckets: " + hashTable.size());
+        for (Map.Entry<BucketKey, List<Map<String, Object>>> entry : hashTable.entrySet()) {
+            System.out.println("Bucket: " + entry.getKey().micHd + "_" + entry.getKey().month);
+        }
+         */
+
+
+
+        // BUILDING PHASE
+
+        /*
+        // Establish a connection to the database
+        try (Connection connection = DriverManager.getConnection(mmsaUrl, dbUsername, dbPassword)) {
+            // Retrieve rows from the "MMSA" table
+            String sql = "SELECT * FROM mmsa";
+            try (Statement statement = connection.createStatement();
+                 ResultSet resultSet = statement.executeQuery(sql)) {
+
+                // Populate the hash table with rows from the "MMSA" table
+                while (resultSet.next()) {
+                    int micHd = resultSet.getInt("_MICHD");
+                    String month = resultSet.getString("Timestamp").substring(5, 7);
+                    Map<String, Object> row = new LinkedHashMap<>(); // LinkedHashMap to preserve insertion order
+
+                    // Store all columns of the row
+                    ResultSetMetaData metaData = resultSet.getMetaData();
+                    int columnCount = metaData.getColumnCount();
+                    for (int i = 1; i <= columnCount; i++) {
+                        String columnName = metaData.getColumnName(i);
+                        Object columnValue = resultSet.getObject(i);
+                        row.put(columnName, columnValue);
+                    }
+
+                    // Create a BucketKey object for the current row
+                    BucketKey bucketKey = new BucketKey(micHd, month);
+                    // Get the list of rows for the corresponding bucket
+                    List<Map<String, Object>> rows = hashTable.computeIfAbsent(bucketKey, k -> new ArrayList<>());
+
+                    // Add the current row to the list of rows for the bucket
+                    rows.add(row);
+                }
+            }
+
+
+            // Print the contents of the hash table
+
+
+            System.out.println("Contents of the Hash Table:");
+            for (Map.Entry<BucketKey, List<Map<String, Object>>> entry : hashTable.entrySet()) {
+                System.out.println("Bucket: " + entry.getKey().micHd + "_" + entry.getKey().month);
+                System.out.println("Rows:");
+
+                // Print up to 10 rows from each bucket
+                int rowCount = 0;
+                for (Map<String, Object> row : entry.getValue()) {
+                    System.out.println(row);
+                    rowCount++;
+                    if (rowCount >= 10) {
+                        break; // Exit the loop after printing 10 rows
+                    }
+                }
+                System.out.println();
+            }
+
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+         */
+
+
+        // PROBING PHASE
+
+        /*
+        Set<String> visitedLLCPRows = new HashSet<>();
+        try (Connection connection2 = DriverManager.getConnection(llcpUrl, dbUsername, dbPassword)) {
+            String sql2 = "SELECT * FROM llcp";
+            try (Statement statement2 = connection2.createStatement();
+                 ResultSet resultSet2 = statement2.executeQuery(sql2)) {
+
+                while (resultSet2.next()) {
+                    int micHd = resultSet2.getInt("_MICHD");
+                    String month = resultSet2.getString("Timestamp").substring(5, 7); // Extract month from Timestamp column
+                    String rowKey = micHd + "_" + month;
+                    Map<String, Object> row = new LinkedHashMap<>();
+
+                    // Store all columns of the row
+                    ResultSetMetaData metaData = resultSet2.getMetaData();
+                    int columnCount = metaData.getColumnCount();
+                    for (int i = 1; i <= columnCount; i++) {
+                        String columnName = metaData.getColumnName(i);
+                        Object columnValue = resultSet2.getObject(i);
+                        row.put(columnName, columnValue);
+                    }
+
+                    // Create a BucketKey object for the current row
+                    //BucketKey bucketKey = new BucketKey(micHd, month);
+                    //List<Map<String, Object>> matchingRows = hashTable.get(bucketKey);
+
+                    if (!visitedLLCPRows.contains(rowKey)) {
+                        BucketKey bucketKey = new BucketKey(micHd, month);
+                        List<Map<String, Object>> matchingRows = hashTable.get(bucketKey);
+
+                        if (matchingRows != null) {
+                            int matchCount = matchingRows.size();
+                            System.out.println("LLCP row: _MICHD=" + micHd + ", Month=" + month);
+                            System.out.println("Number of matching rows in MMSA: " + matchCount);
+                            System.out.println();
+                        }
+
+                        visitedLLCPRows.add(rowKey);
+                    }
+                    if (matchingRows != null) {
+                        int matchCount = matchingRows.size();
+                        System.out.println("LLCP row: _MICHD=" + micHd + ", Month=" + month);
+                        System.out.println("Number of matching rows in MMSA: " + matchCount);
+                        System.out.println();
+                    }
+
+                    // If a match is found, print the joined rows
+                    if (matchingRows != null) {
+                        System.out.println("Match found for LLCP row: " + row);
+                        int matchCount = 0;
+                        for (Map<String, Object> matchingRow : matchingRows) {
+                            System.out.println("Matching MMSA row: " + matchingRow);
+                            matchCount++;
+                            if (matchCount >= 10) {
+                                break;
+                            }
+                        }
+                        System.out.println();
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        long endTime = System.currentTimeMillis();
+
+        long totalTimeInMillis = endTime - startTime;
+
+        double totalTimeInSeconds = totalTimeInMillis / 1000.0;
+
+        System.out.println("Total execution time: " + totalTimeInSeconds + " seconds");
+         */
+
+
+
+=== /* Code Dump for Merge-Sort Join */ ===
+
+
+interface TableRow {
+        String getTimestamp();
+
+        int get_MICHD();
+    }
+
+    static class LLCPRow implements TableRow {
+        private int _MICHD;
+        private String Timestamp;
+
+        public LLCPRow(int _MICHD, String timestamp) {
+            this._MICHD = _MICHD;
+            Timestamp = timestamp;
+        }
+
+        public LLCPRow() {
+
+        }
+
+        public void set_MICHD(int _MICHD) {
+            this._MICHD = _MICHD;
+        }
+
+        public void setTimestamp(String timestamp) {
+            Timestamp = timestamp;
+        }
+
+        public int get_MICHD() {
+            return _MICHD;
+        }
+
+        public String getTimestamp() {
+            return Timestamp;
+        }
+    }
+
+    static class MMSARow implements TableRow{
+        private int _MICHD;
+        private String Timestamp;
+
+        public MMSARow(int _MICHD, String timestamp) {
+            this._MICHD = _MICHD;
+            Timestamp = timestamp;
+        }
+
+        public MMSARow() {
+
+        }
+
+        public void set_MICHD(int _MICHD) {
+            this._MICHD = _MICHD;
+        }
+
+        public void setTimestamp(String timestamp) {
+            Timestamp = timestamp;
+        }
+
+        public int get_MICHD() {
+            return _MICHD;
+        }
+
+        public String getTimestamp() {
+            return Timestamp;
+        }
+
+    }
+
+    // Method to load data from a table in the database
+    static <T extends TableRow> List<T> loadDataFromTable(String jdbcUrl, String username, String password, String tableName, Supplier<T> rowSupplier) {
+        List<T> rows = new ArrayList<>();
+
+        try (Connection conn = DriverManager.getConnection(jdbcUrl, username, password);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT * FROM " + tableName)) {
+
+            while (rs.next()) {
+                // Create LLCPRow or MMSARow object and add it to the list
+                T row = rowSupplier.get();
+
+                if (row instanceof LLCPRow) {
+                    ((LLCPRow) row).set_MICHD(rs.getInt("_MICHD"));
+                    ((LLCPRow) row).setTimestamp(rs.getString("Timestamp"));
+                } else if (row instanceof MMSARow) {
+                    ((MMSARow) row).set_MICHD(rs.getInt("_MICHD"));
+                    ((MMSARow) row).setTimestamp(rs.getString("Timestamp"));
+                    // Populate other properties specific to MMSARow if needed
+                }
+                // Add the row to the list
+                rows.add(row);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return rows;
+    }
+
+    // Method to sort rows based on _MICHD and month
+    static <T extends TableRow> void sortRows(List<T> rows) {
+        Collections.sort(rows, new Comparator<T>() {
+            @Override
+            public int compare(T row1, T row2) {
+                // Compare _MICHD values
+                int micHdComparison = Integer.compare(row1.get_MICHD(), row2.get_MICHD());
+                if (micHdComparison != 0) {
+                    return micHdComparison;
+                }
+
+                // Extract and compare month from timestamp
+                String month1 = row1.getTimestamp().substring(5, 7);
+                String month2 = row2.getTimestamp().substring(5, 7);
+                return month1.compareTo(month2);
+            }
+        });
+    }
+
+    // Method to print the first n rows of a list
+    static <T extends TableRow> void printRows(List<T> rows, int n) {
+        for (int i = 0; i < Math.min(rows.size(), n); i++) {
+            T row = rows.get(i);
+            System.out.println("Row " + (i + 1) + ": _MICHD=" + row.get_MICHD() + ", Timestamp=" + row.getTimestamp());
+        }
+    }
+
+
+    // Method to perform merge join and print matching rows
+    static void performMergeJoin(List<LLCPRow> llcpRows, List<MMSARow> mmsaRows) {
+        int llcpIndex = 0;
+        int mmsaIndex = 0;
+
+        while (llcpIndex < llcpRows.size() && mmsaIndex < mmsaRows.size()) {
+            LLCPRow llcpRow = llcpRows.get(llcpIndex);
+            MMSARow mmsaRow = mmsaRows.get(mmsaIndex);
+
+            // Compare _MICHD values
+            int micHdComparison = Integer.compare(llcpRow.get_MICHD(), mmsaRow.get_MICHD());
+
+            if (micHdComparison == 0) {
+                // Extract and compare month from timestamp
+                String llcpMonth = llcpRow.getTimestamp().substring(5, 7);
+                String mmsaMonth = mmsaRow.getTimestamp().substring(5, 7);
+
+                if (llcpMonth.equals(mmsaMonth)) {
+                    // Matching rows found, print them
+                    System.out.println("Matching rows:");
+                    System.out.println("LLCP row: " + llcpRow);
+                    System.out.println("MMSA row: " + mmsaRow);
+
+                    // Move to next LLCP and MMSA rows
+                    llcpIndex++;
+                    mmsaIndex++;
+                } else if (llcpMonth.compareTo(mmsaMonth) < 0) {
+                    // Advance LLCP index if LLCP month is smaller
+                    llcpIndex++;
+                } else {
+                    // Advance MMSA index if MMSA month is smaller
+                    mmsaIndex++;
+                }
+            } else if (micHdComparison < 0) {
+                // Advance LLCP index if LLCP _MICHD is smaller
+                llcpIndex++;
+            } else {
+                // Advance MMSA index if MMSA _MICHD is smaller
+                mmsaIndex++;
+            }
+        }
+    }
+
+
+
+            /*
+            Merge-Sort-Join Algorithm
+             */
+
+
+            // Load data from LLCP and MMSA tables
+            List<LLCPRow> llcpRows = loadDataFromTable(llcpUrl, dbUsername, dbPassword, "llcp", (Supplier<LLCPRow>) LLCPRow::new);
+            List<MMSARow> mmsaRows = loadDataFromTable(mmsaUrl, dbUsername, dbPassword, "mmsa", (Supplier<MMSARow>) MMSARow::new);
+
+
+            // Print first 10 rows of LLCP table
+            System.out.println("LLCP Table:");
+            for (int i = 0; i < Math.min(llcpRows.size(), 10); i++) {
+                LLCPRow row = llcpRows.get(i);
+                System.out.println("Row " + (i + 1) + ": _MICHD=" + row.get_MICHD() + ", Timestamp=" + row.getTimestamp());
+            }
+
+            // Print first 10 rows of MMSA table
+            System.out.println("\nMMSA Table:");
+            for (int i = 0; i < Math.min(mmsaRows.size(), 10); i++) {
+                MMSARow row = mmsaRows.get(i);
+                System.out.println("Row " + (i + 1) + ": _MICHD=" + row.get_MICHD() + ", Timestamp=" + row.getTimestamp());
+            }
+
+            System.out.println("Number of MMSA rows: " + mmsaRows.size());
+            System.out.println("Number of LLCP rows: " + llcpRows.size());
+
+
+
+
+            // Sort LLCP and MMSA rows based on _MICHD and month
+            sortRows(llcpRows);
+            sortRows(mmsaRows);
+
+            // Perform Merge-Sort Join
+            performMergeJoin(llcpRows, mmsaRows);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+interface TableRow {
+        String getTimestamp();
+
+        int get_MICHD();
+    }
+
+    static class LLCPRow implements TableRow {
+        private int _MICHD;
+        private String Timestamp;
+
+        public LLCPRow(int _MICHD, String timestamp) {
+            this._MICHD = _MICHD;
+            Timestamp = timestamp;
+        }
+
+        public LLCPRow() {
+
+        }
+
+        public void set_MICHD(int _MICHD) {
+            this._MICHD = _MICHD;
+        }
+
+        public void setTimestamp(String timestamp) {
+            Timestamp = timestamp;
+        }
+
+        public int get_MICHD() {
+            return _MICHD;
+        }
+
+        public String getTimestamp() {
+            return Timestamp;
+        }
+    }
+
+    static class MMSARow implements TableRow{
+        private int _MICHD;
+        private String Timestamp;
+
+        public MMSARow(int _MICHD, String timestamp) {
+            this._MICHD = _MICHD;
+            Timestamp = timestamp;
+        }
+
+        public MMSARow() {
+
+        }
+
+        public void set_MICHD(int _MICHD) {
+            this._MICHD = _MICHD;
+        }
+
+        public void setTimestamp(String timestamp) {
+            Timestamp = timestamp;
+        }
+
+        public int get_MICHD() {
+            return _MICHD;
+        }
+
+        public String getTimestamp() {
+            return Timestamp;
+        }
+
+    }
+
+    // Method to load data from a table in the database
+    static <T extends TableRow> List<T> loadDataFromTable(String jdbcUrl, String username, String password, String tableName, Supplier<T> rowSupplier) {
+        List<T> rows = new ArrayList<>();
+
+        try (Connection conn = DriverManager.getConnection(jdbcUrl, username, password);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT * FROM " + tableName)) {
+
+            while (rs.next()) {
+                // Create LLCPRow or MMSARow object and add it to the list
+                T row = rowSupplier.get();
+
+                if (row instanceof LLCPRow) {
+                    ((LLCPRow) row).set_MICHD(rs.getInt("_MICHD"));
+                    ((LLCPRow) row).setTimestamp(rs.getString("Timestamp"));
+                } else if (row instanceof MMSARow) {
+                    ((MMSARow) row).set_MICHD(rs.getInt("_MICHD"));
+                    ((MMSARow) row).setTimestamp(rs.getString("Timestamp"));
+                    // Populate other properties specific to MMSARow if needed
+                }
+                // Add the row to the list
+                rows.add(row);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return rows;
+    }
+
+    // Method to sort rows based on _MICHD and month
+    static <T extends TableRow> void sortRows(List<T> rows) {
+        Collections.sort(rows, new Comparator<T>() {
+            @Override
+            public int compare(T row1, T row2) {
+                // Compare _MICHD values
+                int micHdComparison = Integer.compare(row1.get_MICHD(), row2.get_MICHD());
+                if (micHdComparison != 0) {
+                    return micHdComparison;
+                }
+
+                // Extract and compare month from timestamp
+                String month1 = row1.getTimestamp().substring(5, 7);
+                String month2 = row2.getTimestamp().substring(5, 7);
+                return month1.compareTo(month2);
+            }
+        });
+    }
+
+    // Method to print the first n rows of a list
+    static <T extends TableRow> void printRows(List<T> rows, int n) {
+        for (int i = 0; i < Math.min(rows.size(), n); i++) {
+            T row = rows.get(i);
+            System.out.println("Row " + (i + 1) + ": _MICHD=" + row.get_MICHD() + ", Timestamp=" + row.getTimestamp());
+        }
+    }
+
+
+    // Method to perform merge join and print matching rows
+    static void performMergeJoin(List<LLCPRow> llcpRows, List<MMSARow> mmsaRows) {
+        int llcpIndex = 0;
+        int mmsaIndex = 0;
+
+        while (llcpIndex < llcpRows.size() && mmsaIndex < mmsaRows.size()) {
+            LLCPRow llcpRow = llcpRows.get(llcpIndex);
+            MMSARow mmsaRow = mmsaRows.get(mmsaIndex);
+
+            // Compare _MICHD values
+            int micHdComparison = Integer.compare(llcpRow.get_MICHD(), mmsaRow.get_MICHD());
+
+            if (micHdComparison == 0) {
+                // Extract and compare month from timestamp
+                String llcpMonth = llcpRow.getTimestamp().substring(5, 7);
+                String mmsaMonth = mmsaRow.getTimestamp().substring(5, 7);
+
+                if (llcpMonth.equals(mmsaMonth)) {
+                    // Matching rows found, print them
+                    System.out.println("Matching rows:");
+                    System.out.println("LLCP row: " + llcpRow);
+                    System.out.println("MMSA row: " + mmsaRow);
+
+                    // Move to next LLCP and MMSA rows
+                    llcpIndex++;
+                    mmsaIndex++;
+                } else if (llcpMonth.compareTo(mmsaMonth) < 0) {
+                    // Advance LLCP index if LLCP month is smaller
+                    llcpIndex++;
+                } else {
+                    // Advance MMSA index if MMSA month is smaller
+                    mmsaIndex++;
+                }
+            } else if (micHdComparison < 0) {
+                // Advance LLCP index if LLCP _MICHD is smaller
+                llcpIndex++;
+            } else {
+                // Advance MMSA index if MMSA _MICHD is smaller
+                mmsaIndex++;
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+public static void performMergeJoin(List<LLCPRow> llcpRows, List<MMSARow> mmsaRows) {
+        int llcpIndex = 0;
+        int mmsaIndex = 0;
+        int matchingCount = 0;
+
+        while (llcpIndex < llcpRows.size() && mmsaIndex < mmsaRows.size()) {
+            LLCPRow llcpRow = llcpRows.get(llcpIndex);
+            MMSARow mmsaRow = mmsaRows.get(mmsaIndex);
+
+            // Compare _MICHD values
+            int micHdComparison = Integer.compare(llcpRow.get_MICHD(), mmsaRow.get_MICHD());
+
+            if (micHdComparison == 0) {
+                // Extract and compare month from timestamp
+                String llcpMonth = llcpRow.getTimestamp().substring(5, 7);
+                String mmsaMonth = mmsaRow.getTimestamp().substring(5, 7);
+
+                if (llcpMonth.equals(mmsaMonth)) {
+                    // Matching rows found, print them
+                    matchingCount += outputTuples(llcpRows, mmsaRows, llcpIndex, mmsaIndex);
+
+                    // Move to next LLCP and MMSA rows
+                    llcpIndex++;
+                    mmsaIndex++;
+                } else if (llcpMonth.compareTo(mmsaMonth) < 0) {
+                    llcpIndex++;
+                } else {
+                    mmsaIndex++;
+                }
+            } else if (micHdComparison < 0) {
+                llcpIndex++;
+            } else {
+                mmsaIndex++;
+            }
+        }
+
+        System.out.println("Total matching rows: " + matchingCount);
+    }
+
+    public static int outputTuples(List<LLCPRow> llcpRows, List<MMSARow> mmsaRows, int llcpIndex, int mmsaIndex) {
+        int initialLlcpIndex = llcpIndex;
+        int matchCount = 0;
+
+        while (llcpIndex < llcpRows.size() && llcpRows.get(llcpIndex).get_MICHD() == mmsaRows.get(mmsaIndex).get_MICHD()
+                && llcpRows.get(llcpIndex).getTimestamp().substring(5, 7).equals(mmsaRows.get(mmsaIndex).getTimestamp().substring(5, 7))) {
+
+            int tempMmsaIndex = mmsaIndex;
+
+            while (tempMmsaIndex < mmsaRows.size() && llcpRows.get(llcpIndex).get_MICHD() == mmsaRows.get(tempMmsaIndex).get_MICHD()
+                    && llcpRows.get(llcpIndex).getTimestamp().substring(5, 7).equals(mmsaRows.get(tempMmsaIndex).getTimestamp().substring(5, 7))) {
+
+                // Increment the match count for each match found
+                matchCount++;
+                tempMmsaIndex++;
+            }
+            llcpIndex++;
+        }
+        return matchCount;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    static void performMergeJoin(List<LLCPRow> llcpRows, List<MMSARow> mmsaRows) {
+            int llcpIndex = 0;
+            int mmsaIndex = 0;
+            int matchingCount = 0;
+
+            while (llcpIndex < llcpRows.size() && mmsaIndex < mmsaRows.size()) {
+                LLCPRow llcpRow = llcpRows.get(llcpIndex);
+                MMSARow mmsaRow = mmsaRows.get(mmsaIndex);
+
+                // Compare _MICHD values
+                int micHdComparison = Integer.compare(llcpRow.get_MICHD(), mmsaRow.get_MICHD());
+
+                if (micHdComparison == 0) {
+                    // Extract and compare month from timestamp
+                    String llcpMonth = llcpRow.getTimestamp().substring(5, 7);
+                    String mmsaMonth = mmsaRow.getTimestamp().substring(5, 7);
+
+                    if (llcpMonth.equals(mmsaMonth)) {
+                        // Matching rows found, print them
+                        //System.out.println("Matching rows:");
+                        //System.out.println("LLCP row: " + llcpRow);
+                        //System.out.println("MMSA row: " + mmsaRow);
+                        matchingCount++;
+
+                        llcpIndex++;
+                        mmsaIndex++;
+                    } else if (llcpMonth.compareTo(mmsaMonth) < 0) {
+                        llcpIndex++;
+                    } else {
+                        mmsaIndex++;
+                    }
+                } else if (micHdComparison < 0) {
+                    llcpIndex++;
+                } else {
+                    mmsaIndex++;
+                }
+            }
+            System.out.println("Matching count:" + matchingCount);
+
+        }
+
+        static void performMergeJoinVerbose(List<LLCPRow> llcpRows, List<MMSARow> mmsaRows) {
+            int llcpIndex = 0;
+            int mmsaIndex = 0;
+
+            // Initialize counters
+            int matchingCount = 0;
+            String currentLlcpMonth = "";
+            int currentLlcpMicHd = -1;
+
+            while (llcpIndex < llcpRows.size() && mmsaIndex < mmsaRows.size()) {
+                LLCPRow llcpRow = llcpRows.get(llcpIndex);
+                MMSARow mmsaRow = mmsaRows.get(mmsaIndex);
+
+                // Compare _MICHD values
+                int micHdComparison = Integer.compare(llcpRow.get_MICHD(), mmsaRow.get_MICHD());
+
+                if (micHdComparison == 0) {
+                    // Extract and compare month from timestamp
+                    String llcpMonth = llcpRow.getTimestamp().substring(5, 7);
+                    String mmsaMonth = mmsaRow.getTimestamp().substring(5, 7);
+
+                    if (llcpMonth.equals(mmsaMonth)) {
+                        matchingCount++;
+
+                        llcpIndex++;
+                        mmsaIndex++;
+                    } else if (llcpMonth.compareTo(mmsaMonth) < 0) {
+                        if (!llcpMonth.equals(currentLlcpMonth) || llcpRow.get_MICHD() != currentLlcpMicHd) {
+                            if (matchingCount > 0) {
+                                System.out.println("LLCP row: _MICHD=" + currentLlcpMicHd + ", Month=" + currentLlcpMonth);
+                                System.out.println("Number of matching MMSA rows: " + matchingCount);
+                                System.out.println();
+                            }
+
+                            currentLlcpMonth = llcpMonth;
+                            currentLlcpMicHd = llcpRow.get_MICHD();
+                            matchingCount = 0;
+                        }
+                        llcpIndex++;
+                    } else {
+                        mmsaIndex++;
+                    }
+                } else if (micHdComparison < 0) {
+                    if (!llcpRow.getTimestamp().substring(5, 7).equals(currentLlcpMonth) || llcpRow.get_MICHD() != currentLlcpMicHd) {
+                        if (matchingCount > 0) {
+                            System.out.println("LLCP row: _MICHD=" + currentLlcpMicHd + ", Month=" + currentLlcpMonth);
+                            System.out.println("Number of matching MMSA rows: " + matchingCount);
+                            System.out.println();
+                        }
+
+                        currentLlcpMonth = llcpRow.getTimestamp().substring(5, 7);
+                        currentLlcpMicHd = llcpRow.get_MICHD();
+                        matchingCount = 0;
+                    }
+
+                    llcpIndex++;
+                } else {
+                    mmsaIndex++;
+                }
+            }
+            // Print the last set of results if any
+            if (matchingCount > 0) {
+                System.out.println("LLCP row: _MICHD=" + currentLlcpMicHd + ", Month=" + currentLlcpMonth);
+                System.out.println("Number of matching MMSA rows: " + matchingCount);
+            }
+
+        }

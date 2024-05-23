@@ -1,0 +1,207 @@
+static Random random = new Random();
+
+
+
+private static String extractMonth(Object timestamp) {
+        if (timestamp instanceof String) {
+            // If the timestamp is already a string, directly extract the month
+            return ((String) timestamp).substring(5, 7);
+        } else if (timestamp instanceof java.sql.Date) {
+            // If the timestamp is a java.sql.Date object, convert it to a string and then extract the month
+            String dateString = timestamp.toString();
+            return dateString.substring(5, 7);
+        } else {
+            // Handle unexpected types or null values gracefully
+            return null; // or throw an exception, depending on your requirements
+        }
+        //return timestamp.substring(5, 7);
+    }
+
+
+
+static Map<String, Object> getRowMap(ResultSet rs) throws SQLException {
+        Map<String, Object> row = new HashMap<>();
+        ResultSetMetaData metaData = rs.getMetaData();
+        for (int i = 1; i <= metaData.getColumnCount(); i++) {
+            row.put(metaData.getColumnName(i), rs.getObject(i));
+        }
+        return row;
+    }
+
+
+
+static SingleHashJoin.BucketKey getBucketKey(Map<String, Object> row) {
+        int micHd = (int) row.get("_MICHD");
+        String timestamp = (String) row.get("Timestamp");
+        String month = timestamp.substring(5, 7);
+        return new SingleHashJoin.BucketKey(micHd, month);
+    }
+
+
+
+/*
+        try {
+            // Connect to the databases
+            Connection mmsaConn = DriverManager.getConnection(mmsaUrl, dbUsername, dbPassword);
+            Connection llcpConn = DriverManager.getConnection(llcpUrl, dbUsername, dbPassword);
+
+            // Create statement objects for each table
+            Statement mmsaStmt = mmsaConn.createStatement();
+            Statement llcpStmt = llcpConn.createStatement();
+
+            // Get row counts for random selection
+            ResultSet mmsaCountRs = mmsaStmt.executeQuery("SELECT COUNT(*) FROM MMSA");
+            mmsaCountRs.next();
+            int mmsaRowCount = mmsaCountRs.getInt(1);
+
+            ResultSet llcpCountRs = llcpStmt.executeQuery("SELECT COUNT(*) FROM LLCP");
+            llcpCountRs.next();
+            int llcpRowCount = llcpCountRs.getInt(1);
+
+            int totalMatches = 0;
+
+            int mmsaIndex = 0;
+            int llcpIndex = 0;
+
+            while (mmsaIndex < mmsaRowCount || llcpIndex < llcpRowCount) {
+                if (mmsaIndex < mmsaRowCount && (llcpIndex >= llcpRowCount || random.nextInt(2) == 0)) {
+                    // Read from MMSA table
+                    ResultSet mmsaRs = mmsaStmt.executeQuery("SELECT * FROM MMSA LIMIT " + mmsaIndex + ", 1");
+                    if (mmsaRs.next()) {
+                        Map<String, Object> mmsaRow = getRowMap(mmsaRs);
+                        SingleHashJoin.BucketKey key = getBucketKey(mmsaRow);
+
+                        // Insert into MMSA hash table
+                        mmsaHashTable.computeIfAbsent(key, k -> new ArrayList<>()).add(mmsaRow);
+
+                        // Probe LLCP hash table
+                        if (llcpHashTable.containsKey(key)) {
+                            totalMatches += llcpHashTable.get(key).size();
+                        }
+                    }
+                    mmsaIndex++;
+                } else if (llcpIndex < llcpRowCount) {
+                    // Read from LLCP table
+                    ResultSet llcpRs = llcpStmt.executeQuery("SELECT * FROM LLCP LIMIT " + llcpIndex + ", 1");
+                    if (llcpRs.next()) {
+                        Map<String, Object> llcpRow = getRowMap(llcpRs);
+                        SingleHashJoin.BucketKey key = getBucketKey(llcpRow);
+
+                        // Insert into LLCP hash table
+                        llcpHashTable.computeIfAbsent(key, k -> new ArrayList<>()).add(llcpRow);
+
+                        // Probe MMSA hash table
+                        if (mmsaHashTable.containsKey(key)) {
+                            totalMatches += mmsaHashTable.get(key).size();
+                        }
+                    }
+                    llcpIndex++;
+                }
+            }
+
+            System.out.println("Total matches found: " + totalMatches);
+
+            mmsaConn.close();
+            llcpConn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+         */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Random rand = new Random();
+            while (rsMmsa.next() || rsLlcp.next()) {
+                if (rsMmsa.next() && rand.nextBoolean()) {
+                    // Read and process row from MMSA
+                    Map<String, Object> mmsaRow = extractRow(rsMmsa);
+                    BucketKey bucketKey = new BucketKey((int) mmsaRow.get("_MICHD"), extractMonth((String) mmsaRow.get("Timestamp")));
+                    mmsaHashTable.computeIfAbsent(bucketKey, k -> new ArrayList<>()).add(mmsaRow);
+
+                    // Probe LLCP hash table
+                    if (llcpHashTable.containsKey(bucketKey)) {
+                        int currentCount = matchCountMap.getOrDefault(bucketKey, 0);
+                        matchCountMap.put(bucketKey, currentCount + llcpHashTable.get(bucketKey).size());
+                    }
+                } else if (rsLlcp.next()) {
+                    // Read and process row from LLCP
+                    Map<String, Object> llcpRow = extractRow(rsLlcp);
+                    BucketKey bucketKey = new BucketKey((int) llcpRow.get("_MICHD"), extractMonth((String) llcpRow.get("Timestamp")));
+                    llcpHashTable.computeIfAbsent(bucketKey, k -> new ArrayList<>()).add(llcpRow);
+                    uniqueLlcpKeys.add(bucketKey);
+
+                    // Probe MMSA hash table
+                    if (mmsaHashTable.containsKey(bucketKey)) {
+                        int currentCount = matchCountMap.getOrDefault(bucketKey, 0);
+                        matchCountMap.put(bucketKey, currentCount + mmsaHashTable.get(bucketKey).size());
+                    }
+                }
+            }
+
+            // Print results
+            for (BucketKey key : uniqueLlcpKeys) {
+                int matchCount = matchCountMap.getOrDefault(key, 0);
+                System.out.println("LLCP row: _MICHD=" + key.getMicHd() + ", Month=" + key.getMonth());
+                System.out.println("Number of matching MMSA rows: " + matchCount);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+
+//Map<String, Object> mmsaRow = extractRow(rsMmsa);
+                    //SingleHashJoin.BucketKey bucketKey = new SingleHashJoin.BucketKey(rsMmsa.getInt("_MICHD"), rsMmsa.getString("Timestamp").substring(5,7));
+                    //mmsaHashTable.computeIfAbsent(bucketKey, k -> new ArrayList<>()).add(mmsaRow);
+
+
+
+//int currentCount = matchCountMap.getOrDefault(bucketKey, 0);
+                        //matchCountMap.put(bucketKey, currentCount + llcpHashTable.get(bucketKey).size());
+
+
+/*
+            for (SingleHashJoin.BucketKey key : uniqueLlcpKeys) {
+                int matchCount = matchCountMap.getOrDefault(key, 0);
+                System.out.println("LLCP row: _MICHD=" + key.getMicHd() + ", Month=" + key.getMonth());
+                System.out.println("Number of matching MMSA rows: " + matchCount);
+            }
+
+             */
+
+
+             Map<String, Object> values = new HashMap<>();
+                                         values.put("micHd", micHd);
+                                         values.put("hcvu652", hcvu652);
+                                         values.put("rfhype6", rfhype6);
+                                         values.put("rfchol3", rfchol3);
+                                         values.put("month", month);
+
+                                         if (!mmsaHashTable.containsKey(key)) {
+                                             mmsaHashTable.put(key, new ArrayList<>());
+                                         }
+
+                                         if (!llcpHashTable.containsKey(key)) {
+                                             llcpHashTable.put(key, new ArrayList<>());
+                                         }
+
+                                         mmsaHashTable.get(key).add(values);
+                                         llcpHashTable.get(key).add(values);
