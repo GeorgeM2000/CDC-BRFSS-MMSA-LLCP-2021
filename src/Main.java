@@ -34,7 +34,7 @@ public class Main {
         String mmsaUrl = "jdbc:mysql://localhost:3306/CDC_BRFSS_MMSA";
         String llcpUrl = "jdbc:mysql://localhost:3306/CDC_BRFSS_LLCP";
         String dbUsername = "root";
-        String dbPassword = "gmaok25m8102000DIS@ email";
+        String dbPassword = "---";
 
         String timestamp1 = "2023-05-17";
         String timestamp2 = "2023-12-20";
