@@ -10,7 +10,7 @@ public class PipelinedHashJoin {
         String mmsaUrl = "jdbc:mysql://localhost:3306/CDC_BRFSS_MMSA";
         String llcpUrl = "jdbc:mysql://localhost:3306/CDC_BRFSS_LLCP";
         String dbUsername = "root";
-        String dbPassword = "gmaok25m8102000DIS@ email";
+        String dbPassword = "---";
 
 
         long startTime = System.currentTimeMillis();
