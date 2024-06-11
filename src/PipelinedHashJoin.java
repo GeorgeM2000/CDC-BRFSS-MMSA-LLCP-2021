@@ -4,13 +4,10 @@ import java.util.*;
 public class PipelinedHashJoin {
 
     public static void main(String[] args) {
-        String mmsa = "CDC_BRFSS_Datasets/MMSA_2021_Undersampled_VerB.csv";
-        String llcp = "CDC_BRFSS_Datasets/LLCP_2021_Undersampled_VerB.csv";
-
         String mmsaUrl = "jdbc:mysql://localhost:3306/CDC_BRFSS_MMSA";
         String llcpUrl = "jdbc:mysql://localhost:3306/CDC_BRFSS_LLCP";
         String dbUsername = "root";
-        String dbPassword = "gmaok25m8102000DIS@ email";
+        String dbPassword = "--";
 
 
         long startTime = System.currentTimeMillis();

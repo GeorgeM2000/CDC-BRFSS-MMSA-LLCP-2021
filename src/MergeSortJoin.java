@@ -190,13 +190,10 @@ public class MergeSortJoin {
 
 
     public static void main(String[] args) {
-        String mmsa = "CDC_BRFSS_Datasets/MMSA_2021_Undersampled_VerB.csv";
-        String llcp = "CDC_BRFSS_Datasets/LLCP_2021_Undersampled_VerB.csv";
-
         String mmsaUrl = "jdbc:mysql://localhost:3306/CDC_BRFSS_MMSA";
         String llcpUrl = "jdbc:mysql://localhost:3306/CDC_BRFSS_LLCP";
         String dbUsername = "root";
-        String dbPassword = "gmaok25m8102000DIS@ email";
+        String dbPassword = "--";
 
         /*
         Merge-Sort-Join Algorithm
@@ -205,8 +202,8 @@ public class MergeSortJoin {
         long startTime = System.currentTimeMillis();
 
         // Load data from LLCP and MMSA tables
-        List<LLCPRow> llcpRows = loadDataFromTable(llcpUrl, dbUsername, dbPassword, "llcp", (Supplier<LLCPRow>) LLCPRow::new);
-        List<MMSARow> mmsaRows = loadDataFromTable(mmsaUrl, dbUsername, dbPassword, "mmsa", (Supplier<MMSARow>) MMSARow::new);
+        List<LLCPRow> llcpRows = loadDataFromTable(llcpUrl, dbUsername, dbPassword, "llcp_verB", (Supplier<LLCPRow>) LLCPRow::new);
+        List<MMSARow> mmsaRows = loadDataFromTable(mmsaUrl, dbUsername, dbPassword, "mmsa_verB", (Supplier<MMSARow>) MMSARow::new);
 
         // Print first 10 rows of LLCP table
         /*
@@ -235,6 +232,7 @@ public class MergeSortJoin {
 
         // Perform Merge-Sort Join
         int matchingCount = performMergeJoin(llcpRows, mmsaRows);
+
 
         long endTime = System.currentTimeMillis();
 

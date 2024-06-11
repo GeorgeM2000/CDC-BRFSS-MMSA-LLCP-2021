@@ -39,13 +39,10 @@ public class SingleHashJoin {
     }
 
     public static void main(String[] args) {
-        String mmsa = "CDC_BRFSS_Datasets/MMSA_2021_Undersampled_VerB.csv";
-        String llcp = "CDC_BRFSS_Datasets/LLCP_2021_Undersampled_VerB.csv";
-
         String mmsaUrl = "jdbc:mysql://localhost:3306/CDC_BRFSS_MMSA";
         String llcpUrl = "jdbc:mysql://localhost:3306/CDC_BRFSS_LLCP";
         String dbUsername = "root";
-        String dbPassword = "gmaok25m8102000DIS@ email";
+        String dbPassword = "--";
 
 
         /*
@@ -75,11 +72,14 @@ public class SingleHashJoin {
             }
         }
 
+        /*
         // Print the buckets
         System.out.println("Number of Buckets: " + hashTable.size());
         for (Map.Entry<BucketKey, List<Map<String, Object>>> entry : hashTable.entrySet()) {
             System.out.println("Bucket: " + entry.getKey().micHd + "_" + entry.getKey().month);
         }
+
+         */
 
 
 
@@ -88,7 +88,7 @@ public class SingleHashJoin {
         // Establish a connection to the database
         try (Connection connection = DriverManager.getConnection(mmsaUrl, dbUsername, dbPassword)) {
             // Retrieve rows from the "MMSA" table
-            String sql = "SELECT * FROM mmsa";
+            String sql = "SELECT * FROM mmsa_verB";
             try (Statement statement = connection.createStatement();
                  ResultSet resultSet = statement.executeQuery(sql)) {
 
@@ -150,7 +150,7 @@ public class SingleHashJoin {
         // Establish a connection to the database
         try (Connection connection2 = DriverManager.getConnection(llcpUrl, dbUsername, dbPassword)) {
             // Retrieve rows from the "LLCP" table
-            String sql2 = "SELECT * FROM llcp";
+            String sql2 = "SELECT * FROM llcp_verB";
             try (Statement statement2 = connection2.createStatement();
                  ResultSet resultSet2 = statement2.executeQuery(sql2)) {
 
@@ -198,6 +198,8 @@ public class SingleHashJoin {
                     }
 
                      */
+
+
 
 
                     /*

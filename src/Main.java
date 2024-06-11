@@ -28,38 +28,19 @@ public class Main {
 
 
     public static void main(String[] args) {
-        String mmsa = "CDC_BRFSS_Datasets/MMSA_2021_Undersampled_VerB.csv";
-        String llcp = "CDC_BRFSS_Datasets/LLCP_2021_Undersampled_VerB.csv";
+        //String mmsa = "CDC_BRFSS_Datasets/MMSA_2021_Undersampled_VerB.csv";
+        //String llcp = "CDC_BRFSS_Datasets/LLCP_2021_Undersampled_VerB.csv";
+
+        String mmsa = "CDC_BRFSS_Datasets/MMSA_2021_Undersampled.csv";
+        String llcp = "CDC_BRFSS_Datasets/LLCP_2021_Undersampled.csv";
 
         String mmsaUrl = "jdbc:mysql://localhost:3306/CDC_BRFSS_MMSA";
         String llcpUrl = "jdbc:mysql://localhost:3306/CDC_BRFSS_LLCP";
         String dbUsername = "root";
-        String dbPassword = "gmaok25m8102000DIS@ email";
+        String dbPassword = "--";
 
-        String timestamp1 = "2023-05-17";
-        String timestamp2 = "2023-12-20";
-
-        // Extract month parts
-        String llcpMonth = timestamp1.substring(5, 7);
-        String mmsaMonth = timestamp2.substring(5, 7);
-
-        // Convert months to integers as per the requirement
-        int llcpMonthInt = convertMonthToInt(llcpMonth);
-        int mmsaMonthInt = convertMonthToInt(mmsaMonth);
-
-        // Print the results
-        System.out.println("Converted month for timestamp1: " + llcpMonthInt);
-        System.out.println("Converted month for timestamp2: " + mmsaMonthInt);
-
-        // Compare months
-        if (llcpMonthInt == mmsaMonthInt) {
-            System.out.println("The months are equal.");
-        } else {
-            System.out.println("The months are not equal.");
-        }
-
-        /*
         // === Populate the MMSA table ===
+
 
         try (Connection conn = DriverManager.getConnection(mmsaUrl, dbUsername, dbPassword);
              FileReader reader = new FileReader(mmsa);
@@ -79,7 +60,7 @@ public class Main {
                 String Timestamp = csvRecord.get("Timestamp");
 
                 // Insert data into database
-                String sql = "INSERT INTO mmsa (eid, _RFHLTH, _HLTHPLN, _HCVU652, _RFHYPE6, _CHOLCH3, _RFCHOL3, _INCOMG1, _AGE_G, _MICHD, Timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO mmsa_verB (eid, _RFHLTH, _HLTHPLN, _HCVU652, _RFHYPE6, _CHOLCH3, _RFCHOL3, _INCOMG1, _AGE_G, _MICHD, Timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 try (PreparedStatement statement = conn.prepareStatement(sql)) {
                     statement.setString(1, String.valueOf(eid));
                     statement.setString(2, _RFHLTH);
@@ -103,14 +84,13 @@ public class Main {
             ex.printStackTrace();
         }
 
-         */
 
 
 
 
         // === Populate the LLCP table
 
-        /*
+
         try (Connection conn = DriverManager.getConnection(llcpUrl, dbUsername, dbPassword);
              FileReader reader = new FileReader(llcp);
              CSVParser csvParser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader)) {
@@ -132,7 +112,7 @@ public class Main {
                 String Timestamp = csvRecord.get("Timestamp");
 
                 // Insert data into database
-                String sql = "INSERT INTO llcp (eid, _RFHLTH, _HLTHPLN, _HCVU652, _RFHYPE6, _CHOLCH3, _RFCHOL3, _INCOMG1, _AGE_G, _MICHD, MARITAL, RENTHOM1, EMPLOY1, Timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO llcp_verB (eid, _RFHLTH, _HLTHPLN, _HCVU652, _RFHYPE6, _CHOLCH3, _RFCHOL3, _INCOMG1, _AGE_G, _MICHD, MARITAL, RENTHOM1, EMPLOY1, Timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 try (PreparedStatement statement = conn.prepareStatement(sql)) {
                     statement.setString(1, String.valueOf(eid));
                     statement.setString(2, _RFHLTH);
@@ -158,9 +138,6 @@ public class Main {
         } catch (IOException | SQLException ex) {
             ex.printStackTrace();
         }
-
-         */
-
 
 
     }
