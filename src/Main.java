@@ -28,11 +28,11 @@ public class Main {
 
 
     public static void main(String[] args) {
-        //String mmsa = "CDC_BRFSS_Datasets/MMSA_2021_Undersampled_VerB.csv";
-        //String llcp = "CDC_BRFSS_Datasets/LLCP_2021_Undersampled_VerB.csv";
+        String mmsa = "CDC_BRFSS_Datasets/MMSA_2021_Undersampled_VerB.csv";
+        String llcp = "CDC_BRFSS_Datasets/LLCP_2021_Undersampled_VerB.csv";
 
-        String mmsa = "CDC_BRFSS_Datasets/MMSA_2021_Undersampled.csv";
-        String llcp = "CDC_BRFSS_Datasets/LLCP_2021_Undersampled.csv";
+        //String mmsa = "CDC_BRFSS_Datasets/MMSA_2021_Undersampled.csv";
+        //String llcp = "CDC_BRFSS_Datasets/LLCP_2021_Undersampled.csv";
 
         String mmsaUrl = "jdbc:mysql://localhost:3306/CDC_BRFSS_MMSA";
         String llcpUrl = "jdbc:mysql://localhost:3306/CDC_BRFSS_LLCP";
@@ -60,7 +60,7 @@ public class Main {
                 String Timestamp = csvRecord.get("Timestamp");
 
                 // Insert data into database
-                String sql = "INSERT INTO mmsa_verB (eid, _RFHLTH, _HLTHPLN, _HCVU652, _RFHYPE6, _CHOLCH3, _RFCHOL3, _INCOMG1, _AGE_G, _MICHD, Timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO mmsa (eid, _RFHLTH, _HLTHPLN, _HCVU652, _RFHYPE6, _CHOLCH3, _RFCHOL3, _INCOMG1, _AGE_G, _MICHD, Timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 try (PreparedStatement statement = conn.prepareStatement(sql)) {
                     statement.setString(1, String.valueOf(eid));
                     statement.setString(2, _RFHLTH);
@@ -112,7 +112,7 @@ public class Main {
                 String Timestamp = csvRecord.get("Timestamp");
 
                 // Insert data into database
-                String sql = "INSERT INTO llcp_verB (eid, _RFHLTH, _HLTHPLN, _HCVU652, _RFHYPE6, _CHOLCH3, _RFCHOL3, _INCOMG1, _AGE_G, _MICHD, MARITAL, RENTHOM1, EMPLOY1, Timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO llcp (eid, _RFHLTH, _HLTHPLN, _HCVU652, _RFHYPE6, _CHOLCH3, _RFCHOL3, _INCOMG1, _AGE_G, _MICHD, MARITAL, RENTHOM1, EMPLOY1, Timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 try (PreparedStatement statement = conn.prepareStatement(sql)) {
                     statement.setString(1, String.valueOf(eid));
                     statement.setString(2, _RFHLTH);
