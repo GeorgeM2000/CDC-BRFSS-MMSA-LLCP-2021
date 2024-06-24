@@ -88,7 +88,7 @@ public class SingleHashJoin {
         // Establish a connection to the database
         try (Connection connection = DriverManager.getConnection(mmsaUrl, dbUsername, dbPassword)) {
             // Retrieve rows from the "MMSA" table
-            String sql = "SELECT * FROM mmsa_verB";
+            String sql = "SELECT * FROM mmsa";
             try (Statement statement = connection.createStatement();
                  ResultSet resultSet = statement.executeQuery(sql)) {
 
@@ -150,7 +150,7 @@ public class SingleHashJoin {
         // Establish a connection to the database
         try (Connection connection2 = DriverManager.getConnection(llcpUrl, dbUsername, dbPassword)) {
             // Retrieve rows from the "LLCP" table
-            String sql2 = "SELECT * FROM llcp_verB";
+            String sql2 = "SELECT * FROM llcp";
             try (Statement statement2 = connection2.createStatement();
                  ResultSet resultSet2 = statement2.executeQuery(sql2)) {
 

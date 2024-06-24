@@ -202,8 +202,8 @@ public class MergeSortJoin {
         long startTime = System.currentTimeMillis();
 
         // Load data from LLCP and MMSA tables
-        List<LLCPRow> llcpRows = loadDataFromTable(llcpUrl, dbUsername, dbPassword, "llcp_verB", (Supplier<LLCPRow>) LLCPRow::new);
-        List<MMSARow> mmsaRows = loadDataFromTable(mmsaUrl, dbUsername, dbPassword, "mmsa_verB", (Supplier<MMSARow>) MMSARow::new);
+        List<LLCPRow> llcpRows = loadDataFromTable(llcpUrl, dbUsername, dbPassword, "llcp", (Supplier<LLCPRow>) LLCPRow::new);
+        List<MMSARow> mmsaRows = loadDataFromTable(mmsaUrl, dbUsername, dbPassword, "mmsa", (Supplier<MMSARow>) MMSARow::new);
 
         // Print first 10 rows of LLCP table
         /*
